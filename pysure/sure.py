@@ -86,6 +86,12 @@ class SuRE:
         forest.initilized_rule_overlapping()
 
         res = forest.find_the_min_set()
+        lattice = forest.get_lattice_structure(res['rules'])
+
+        res['lattice'] = lattice
+        res['lattice_preIndex'] = forest.preIndex
+        res['filter_threshold'] = rule_paras
+
         self.rule_result = res
         
     def visualize(self):
@@ -94,11 +100,10 @@ class SuRE:
         }
 
         ## setting input data
-        input_data = {
-            'error_analysis': True,
-            'textRules': self.rule_result['text_rules'],
-            'rules': self.rule_result['rules'],
-        }
+        input_data = {key: self.rule_result[key] for key in self.rule_result.keys()}
+        input_data['error_analysis'] = self.error_analysis
+        for key in self.data:
+            input_data[key] = self.data[key]
 
         # Plotting the Visualization
         execute_js(

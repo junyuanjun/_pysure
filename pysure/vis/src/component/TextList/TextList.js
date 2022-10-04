@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 
 // styles
 import './TextList.css'
-import SuRE from "../SuRE";
 
 const TextList = ( {textRules} ) => {
     return <div>

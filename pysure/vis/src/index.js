@@ -1,28 +1,41 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { select } from 'd3-selection'
 import './index.css';
+import { select } from 'd3-selection'
 import SuRE from './SuRE';
 
-// const root = ReactDOM.createRoot(document.getElementById('root'));
-// root.render(
-//   <React.StrictMode>
-//     <SuRE />
-//   </React.StrictMode>
-// );
-
-// // If you want to start measuring performance in your app, pass a function
-// // to log results (for example: reportWebVitals(console.log))
-// // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-// reportWebVitals();
+import QueryProcessor from "./component/QueryProcessor/QueryProcessor";
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
+import SelectReducer from './reducer/reducer.js';
+import SuREDev from "./SuREDev";
 
 
-export function renderSuRE(divName, data){
+const store = createStore(SelectReducer);
 
-  ReactDOM.render( 
-    <SuRE
-        textRules={data.textRules}
-    />,
-    select(divName).node() );
+const root = <Provider store={store}>
+       <div>
+           <QueryProcessor/>
+           <SuREDev />
+       </div>
+</Provider>;
+ReactDOM.render(root, document.getElementById('root'));
 
-}
+
+// export function renderSuRE(divName, fetched_data){
+//   ReactDOM.render(
+//       <Provider store={store}>
+//         <SuRE
+//             text_rules={fetched_data.text_rules}
+//             columns={fetched_data.columns} lattice={fetched_data.lattice}
+//             filter_threshold={fetched_data.filter_threshold}
+//             rules = {fetched_data.rules}
+//             real_min = {fetched_data.real_min}
+//             real_max = {fetched_data.real_max}
+//             y_gt = {fetched_data.y_gt}
+//             y_pred = {fetched_data.y_pred}
+//             target_names = {fetched_data.target_names}
+//         />
+//       </Provider>,
+//     select(divName).node() );
+// }

@@ -48,6 +48,14 @@ export const column_order_by_feat_freq = (attrs, rules) => {
     return col_order;
 }
 
+export const readable_text = (val) => {
+    if (val>Math.floor(val) && val<Math.floor(val)+1) {
+        return val.toFixed(1)
+    } else {
+        return val;
+    }
+}
+
 export function postData(url, data, cb) {
     var myHeaders = new Headers();
     myHeaders.append('Content-Type', 'application/json');

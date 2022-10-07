@@ -8,7 +8,8 @@ import './AlignedTree.css'
 import { renderD3 } from '../../hooks/render.hook';
 
 // const
-import { MAXINT, colorCate } from "../../utils/const";
+import { MAXINT, colorCate, conf_fill } from "../../utils/const";
+import { readable_text } from "../../utils/utils";
 
 // third-party
 import * as d3 from 'd3';
@@ -35,27 +36,7 @@ const AlignedTree = ( props ) => {
     }
 
     const render_legend = (headerGroup) => {
-        target_names.forEach((d, i) => {
-            // create new false patterns
-            let pattern = headerGroup.append("pattern")
-                .attr("id", `false-class-${i}`)
-                .attr("class", 'false_class')
-                .attr("patternUnits", "userSpaceOnUse")
-                .attr("width", "4")
-                .attr("height", "4");
 
-            pattern.append('rect')
-                .attr('width', 4)
-                .attr('height', 4)
-                .attr('fill', colorCate[i]);
-
-            pattern.append('path')
-                .attr('d', "M-1,1 l2,-2 M0,4 l4,-4 M3,5 l2,-2");
-
-            // add pattern id to conf_fill
-            // conf_fill.push(`url(#false-class-${i})`);
-            // conf_fill.push(colorCate[i]);
-        })
     }
 
     const construct_lattice = () => {
@@ -186,18 +167,8 @@ const AlignedTree = ( props ) => {
         return node_order;
     }
 
-    const  readable_text = (val) => {
-        if (val>Math.floor(val) && val<Math.floor(val)+1) {
-            return val.toFixed(1)
-        } else {
-            return val;
-        }
-    }
-
-
     const render_feature_aligned_tree = (lattice_chart, chartGroup, yScale, summary_size_, rectXst) => {
         const [feat_max_num, feat_start_pos, r2pos, lattice2r] = construct_lattice();
-        const conf_fill = [ 'url(#false-class-0)', '#d1e5f0', 'url(#false-class-1)', '#fddbc7'];
 
         // render feature names
         let column = chartGroup.append('g')

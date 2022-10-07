@@ -16,6 +16,7 @@ const SuREDev = ( props ) => {
               y_gt = {fetched_data.y_gt}
               y_pred = {fetched_data.y_pred}
               target_names = {fetched_data.target_names}
+              preIndex = {fetched_data.lattice_preIndex}
         />
     );
 }

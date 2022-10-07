@@ -11,6 +11,8 @@ const initial_state = {
 
     /* Data Fetched */
     fetched_data: {},
+
+    selected_rule: {},
 }
 
 export default function Reducer(state = initial_state, action) {

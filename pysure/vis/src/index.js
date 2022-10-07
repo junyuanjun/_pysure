@@ -15,6 +15,7 @@ const store = createStore(SelectReducer);
 
 const root = <Provider store={store}>
        <div>
+           <canvas width={0} height={0} className={'canvas4text'}></canvas>
            <QueryProcessor/>
            <SuREDev />
        </div>

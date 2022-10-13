@@ -12,7 +12,8 @@ const initial_state = {
     /* Data Fetched */
     fetched_data: {},
 
-    selected_rule: {},
+    selected_rule: [],
+    rule_suggestions: [],
 }
 
 export default function Reducer(state = initial_state, action) {
@@ -24,6 +25,10 @@ export default function Reducer(state = initial_state, action) {
         case type.FETCH_DATA:
             return Object.assign({}, state, {
                 fetched_data: action.value,
+            });
+        case type.SET_SELECTED_RULE:
+            return Object.assign({}, state, {
+                selected_rule: action.value,
             });
     }
     return state;

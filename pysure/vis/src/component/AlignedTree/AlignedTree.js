@@ -9,7 +9,7 @@ import { renderD3 } from '../../hooks/render.hook';
 
 // const
 import { MAXINT, colorCate, conf_fill } from "../../utils/const";
-import { readable_text } from "../../utils/utils";
+import {postData, readable_text, transform_selected_rule} from "../../utils/utils";
 
 // third-party
 import * as d3 from 'd3';
@@ -17,7 +17,7 @@ import * as d3 from 'd3';
 
 const AlignedTree = ( props ) => {
     const {attrs, lattice, filter_threshold, col_order, rules,
-        real_min, real_max, tot_size, target_names,
+        real_min, real_max, tot_size, target_names, data_value,
         } = props;
 
     const unit_width =25, unit_height = 20,
@@ -28,6 +28,8 @@ const AlignedTree = ( props ) => {
         legend_height = 20,
         sqWidth = glyphCellHeight,
         feat_name_height = 80;
+    const width = 900;
+    const height = 600;
 
     const apply_lattice_scale = true;
 
@@ -39,46 +41,20 @@ const AlignedTree = ( props ) => {
 
     }
 
-    const construct_lattice = () => {
-        // initialize
-        let pos2r = {}, r2pos = {}, r2lattice={}, lattice2r={};
-        for (let i = 0; i<attrs.length; i++) {
-            pos2r[i] = {};
-            for (let j=0; j<filter_threshold['num_feat']; j++) {
-                pos2r[i][j] = [];
-            }
+    const explore_rule = (node_id) => {
+        const currentRule = transform_selected_rule(lattice, node_id);
+        const {set_selected_rule} = props;
+
+        const para = {
+            'dataname': data_value,
+            'rule': currentRule,
         }
-        // set position
-        rules.forEach((conds, rid) => {
-            let rule = conds['rules'].slice();
-            // rule = rule.sort((a, b) => col_order[a['feature']] - col_order[b['feature']]);
-            r2lattice[rid] = {};
-            let parent = 0;
-            rule.forEach((cond, cid) => {
-                let lattice_node_id = find_lattice_node(parent, cond);
-                r2lattice[rid][cid] = lattice_node_id;
-                lattice2r[lattice_node_id] = [rid, cid]
-                parent = lattice_node_id;
-                if (!pos2r[col_order[cond['feature']]][cid].includes(lattice_node_id )) {
-                    pos2r[col_order[cond['feature']]][cid].push(lattice_node_id);
-                }
-            });
-        });
+        postData("explore_rule/", JSON.stringify(para), (res) => {
+            set_selected_rule(res);
+        } )
+    }
 
-        // predicate ordering in each layer
-        for (let ii = 0; ii < attrs.length; ii++) {
-            let i = col_order[ii];
-            for (let j = 0; j < Object.keys(pos2r[i]).length; j++) {
-                let lat_node_order = generate_node_order_by_feature(ii, j, pos2r, true),
-                    original_pos2r = pos2r[i][j].slice();
-
-                for (let k = 0; k <  pos2r[i][j].length; k++) {
-                    r2pos[original_pos2r[k]] = lat_node_order[k];
-                    pos2r[i][j][lat_node_order[k]] = original_pos2r[k];
-                }
-            }
-        }
-
+    const construct_lattice_ui = (pos2r) => {
         // width setting
         let max_num = 0;
         for (let j = 0; j<filter_threshold['num_feat']; j++) {
@@ -103,72 +79,12 @@ const AlignedTree = ( props ) => {
             feat_start_pos.push(pre_sum * (unit_width+margin_h));
             pre_sum += feat_max_num[i];
         }
-        return [feat_max_num, feat_start_pos, r2pos, lattice2r];
-    }
-
-    const find_lattice_node = (parent, condition) => {
-        let node_id = -1;
-        lattice[parent]['children_id'].forEach((idx) => {
-            let node = lattice[idx];
-            if (condition['feature']==node['feature'] && condition['sign']==node['sign']) {
-                if (condition['sign'] == 'range') {
-                    if (condition['threshold0']==node['threshold0'] && condition['threshold1']==node['threshold1']){
-                        node_id = node['node_id'];
-                        return null;
-                    }
-                } else if (condition['threshold']==node['threshold']){
-                    node_id = node['node_id'];
-                    return null;
-                }
-            }
-        })
-        return node_id;
-    }
-
-    const generate_node_order_by_feature = (feat_idx, cid, pos2r, ascending) => {
-        let node_info = [], node_order = {}, th0, th1;
-
-        for (let k = 0; k < pos2r[col_order[feat_idx]][cid].length; k++) {
-            let node = lattice[pos2r[col_order[feat_idx]][cid][k]]
-            if (ascending) {
-                th0 = MAXINT;
-                th1 = MAXINT;
-            } else {
-                th0 = -MAXINT;
-                th1 = -MAXINT;
-            }
-            if (node['sign'] == 'range') {
-                th0 = node['threshold0'];
-                th1 = node['threshold1'];
-            } else if (node['sign'] == '<=') {
-                th1 = node['threshold'];
-                th0 = real_min[feat_idx];
-            } else if (node['sign'] == '>') {
-                th0 = node['threshold'];
-                th1 = real_max[feat_idx];
-            }
-            node_info.push({
-                'idx': k,
-                'th0': th0,
-                'th1': th1,
-            })
-        }
-
-        node_info.sort((a, b) => {
-            if (a.th0 !== b.th0)
-                return ascending ? a.th0 - b.th0 : b.th0 - a.th0;
-            else if (a.th1 !== b.th1)
-                return ascending ? a.th1 - b.th1 : b.th1 - a.th1;
-            // else
-            //   return pre_order[a.node_id].order - pre_order[b.node_id].order;
-        });
-        node_info.forEach((d, i) => node_order[d.idx] = i);
-
-        return node_order;
+        return [feat_max_num, feat_start_pos];
     }
 
     const render_feature_aligned_tree = (lattice_chart, chartGroup, yScale, summary_size_, rectXst) => {
-        const [feat_max_num, feat_start_pos, r2pos, lattice2r] = construct_lattice();
+        const {r2pos, lattice2r, pos2r} = props;
+        const  [feat_max_num, feat_start_pos] = construct_lattice_ui(pos2r)
 
         // render feature names
         let column = chartGroup.append('g')
@@ -199,7 +115,7 @@ const AlignedTree = ( props ) => {
             .text(d => d);
 
         lattice_chart.attr('width', col_count * (unit_width+margin_h)+feat_name_height*1.41)
-            .attr('height', (filter_threshold['num_feat']+1.5) * (unit_height+margin_v))
+            .attr('height', (filter_threshold['num_feat']) * (unit_height+margin_v))
 
         // render divider line
         let view = chartGroup.append('g')
@@ -369,8 +285,8 @@ const AlignedTree = ( props ) => {
             .attr('y', d => apply_lattice_scale ? -summary_size_(d.support/tot_size)/2: -summary_size_.range()[1]/2)
             .attr('width', d => apply_lattice_scale ? summary_size_(d.support/tot_size): summary_size_.range()[1])
             .attr('height', d => apply_lattice_scale ? summary_size_(d.support/tot_size): summary_size_.range()[1])
-            .on('click', (d) => {
-                // node_click(lattice2r[d['node_id']][0], lattice2r[d['node_id']][1]);
+            .on('click', (evt, d) => {
+                explore_rule(d['node_id'])
             })
             // .on('mouseover', d=>{
             //     node_hover(d['node_id']);
@@ -426,8 +342,7 @@ const AlignedTree = ( props ) => {
             // svg size
             const svgWidthRange = [0, svgref.node().getBoundingClientRect().width - margin.left - margin.right];
             const svgHeightRange = [0, svgref.node().getBoundingClientRect().height - margin.top - margin.bottom];
-            const width = 900;
-            const height = 600;
+
             const min_support = filter_threshold['support'] / tot_size;
 
             svgref.attr('width', width)
@@ -452,7 +367,7 @@ const AlignedTree = ( props ) => {
             render_feature_aligned_tree(svgref, chartGroup, yScale, sizeScale, rectXst);
         }
     )
-    return   <div className='aligned-tree-wrapper'>
+    return   <div className='aligned-tree-wrapper' style={{maxHeight: height, overflow: 'auto'}}>
         <div className='aligned-tree-container'>
             <svg ref={ref}></svg>
         </div>

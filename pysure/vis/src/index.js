@@ -22,7 +22,6 @@ const root = <Provider store={store}>
 </Provider>;
 ReactDOM.render(root, document.getElementById('root'));
 
-
 // export function renderSuRE(divName, fetched_data){
 //   ReactDOM.render(
 //       <Provider store={store}>
@@ -35,6 +34,7 @@ ReactDOM.render(root, document.getElementById('root'));
 //             real_max = {fetched_data.real_max}
 //             y_gt = {fetched_data.y_gt}
 //             y_pred = {fetched_data.y_pred}
+//             data = {fetched_data.data}
 //             target_names = {fetched_data.target_names}
 //         />
 //       </Provider>,

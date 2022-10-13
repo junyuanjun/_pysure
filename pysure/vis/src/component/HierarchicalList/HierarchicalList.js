@@ -8,15 +8,16 @@ import './HierarchicalList.css'
 import { renderD3 } from '../../hooks/render.hook';
 
 // const
-import { readable_text } from "../../utils/utils";
+import {postData, readable_text, transform_selected_rule} from "../../utils/utils";
 
 // third-party
 import * as d3 from 'd3';
 import {conf_fill} from "../../utils/const";
+import {set_selected_rule} from "../../reducer/action";
 
 const HierarchicalList = ( props ) => {
     const {attrs, filter_threshold, lattice, rules, preIndex,
-        tot_size, target_names, ctx,
+        tot_size, target_names, ctx, data_value,
     } = props;
 
     const max_r = 15,
@@ -25,15 +26,30 @@ const HierarchicalList = ( props ) => {
         rectMarginTop = 5,
         rectMarginBottom = 5,
         sqWidth = glyphCellHeight;
+    const width = 900;
+    const height = 600;
 
     const clear_plot = (svgref) => {
         svgref.selectAll('*').remove();
     }
 
-    const render_hierarchical_list = (chartGroup, summary_size_) => {
+    const explore_rule = (node_id) => {
+        const currentRule = transform_selected_rule(lattice, node_id);
+        const {set_selected_rule} = props;
+
+        const para = {
+            'dataname': data_value,
+            'rule': currentRule,
+        }
+        postData("explore_rule/", JSON.stringify(para), (res) => {
+            set_selected_rule(res);
+        } )
+    }
+
+    const render_hierarchical_list = (svg, chartGroup, summary_size_) => {
         let hlist = lattice;
 
-        let list_height = (1+Object.keys(hlist).length) * (glyphCellHeight + rectMarginTop + rectMarginBottom) + 10,
+        let list_height = (1+Object.keys(hlist).length) * (glyphCellHeight + rectMarginTop + rectMarginBottom),
             yPos = d3.scaleLinear()
                 .domain([0, Object.keys(hlist).length])
                 .range([10, list_height]),
@@ -55,8 +71,8 @@ const HierarchicalList = ( props ) => {
             ordered_node[preIndex[i]] = i;
         }
         for (let i = 0; i < Object.keys(hlist).length-1; i++) {
-            if (hlist[ordered_node[i]].depth == 0) count++;
-            y_offset[ordered_node[i]] = count * 10;
+            if (hlist[ordered_node[i]].depth === 0) count++;
+            y_offset[ordered_node[i]] = count * unit_height;
         }
 
         // render
@@ -67,7 +83,8 @@ const HierarchicalList = ( props ) => {
         let bar_width = 0;
 
         list_svg.attr('width', `${list_width+text_width+summary_size_.range()[1]*3}`)
-            .attr('height', list_height + count * 10)
+            .attr('height', list_height + count * unit_height)
+        svg.attr('height', list_height + count * unit_height);
 
         // rule content
         let rule_g = list_svg.selectAll(".rule_node")
@@ -139,7 +156,7 @@ const HierarchicalList = ( props ) => {
             .data(d => {
                 let content = attrs[d["feature"]];
                 if (d['sign'] !== 'range') {
-                    if (d['sign'] == '<=') {
+                    if (d['sign'] === '<=') {
                         content += ' < ' ;
                     } else {
                         content += ' >= ';
@@ -151,7 +168,7 @@ const HierarchicalList = ( props ) => {
 
                 let conj = "AND ";
 
-                if (d.depth == 0) {
+                if (d.depth === 0) {
                     conj = "IF "
                 }
 
@@ -163,26 +180,20 @@ const HierarchicalList = ( props ) => {
             .attr("class", "condition_item")
             .text(d => d.content)
             .attr("x", d=>d.x)
-            .style("font-weight", (d, i) => i%2 == 0 ? "bold" : "normal");
-
+            .style("font-weight", (d, i) => i%2 === 0 ? "bold" : "normal");
 
         rule_g
             .append('rect')
             .attr('class', 'node_mask')
-            .attr('id', (d, node_id) =>`rulemask-${d['node_id']}`)
+            .attr('id', d =>`rulemask-${d['node_id']}`)
             .attr('x', d=>xPos(d.depth)+1+bar_width)
             .attr('y', d=>-unit_height/2-rectMarginTop-2+yPos(preIndex[d.node_id])+y_offset[d.node_id])
             .attr('width', d=>d['text_width']+2)
-            .attr('height', d=>unit_height+6)
-            // .on('click', (d) => {
-            //     node_click(lattice2r[d['node_id']][0], lattice2r[d['node_id']][1]);
-            // })
-            // .on('mouseover', d=>{
-            //     node_hover(d['node_id']);
-            // })
-            // .on('mouseout', d=>{
-            //     node_unhover(d['node_id']);
-            // })
+            .attr('height', unit_height+6)
+            .on('click', (evt, d) => {
+               explore_rule(d['node_id'])
+            })
+
 
         // condition links
         let links = [];
@@ -198,7 +209,7 @@ const HierarchicalList = ( props ) => {
         }
 
         let list_links = list_svg.append('g')
-            .attr('class', '.list_links')
+            .attr('class', 'list_links')
 
         let line = d3.line()
             .x(d=>d.x)
@@ -247,12 +258,10 @@ const HierarchicalList = ( props ) => {
             // svg size
             const svgWidthRange = [0, svgref.node().getBoundingClientRect().width - margin.left - margin.right];
             const svgHeightRange = [0, svgref.node().getBoundingClientRect().height - margin.top - margin.bottom];
-            const width = 900;
-            const height = 600;
+
             const min_support = filter_threshold['support'] / tot_size;
 
-            svgref.attr('width', width)
-                .attr('height', height);
+            svgref.attr('width', width);
 
             // creating scales
             const yScale = d3.scaleBand().domain(d3.range(rules.length+1))
@@ -266,11 +275,11 @@ const HierarchicalList = ( props ) => {
             });
 
             // creating feature aligned tree
-            render_hierarchical_list(chartGroup, sizeScale);
+            render_hierarchical_list(svgref, chartGroup, sizeScale);
         }
     )
 
-    return  <div className='hierarchical-list-wrapper'>
+    return  <div className='hierarchical-list-wrapper' style={{maxHeight: height}}>
         <div className='hierarchical-list-container'>
             <svg ref={ref}></svg>
         </div>

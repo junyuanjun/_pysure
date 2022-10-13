@@ -1,5 +1,5 @@
 
-export const apidomain = "";
+export const apidomain = "http://127.0.0.1:1127/";
 
 export function doFetch(url, cb) {
     fetch(`${window.PUBLIC_URL}${url}`).then((data) => {
@@ -56,12 +56,33 @@ export const readable_text = (val) => {
     }
 }
 
+export const  transform_selected_rule = (lattice, node_id) => {
+    let currentRuleNodes = [];
+    let nid = node_id;
+    while (nid > 0) {
+        let cond = {
+            'feature': lattice[nid]['feature'],
+            'sign': lattice[nid]['sign']
+        }
+        if (cond['sign'] === 'range') {
+            cond['threshold0'] = lattice[nid]['threshold0'];
+            cond['threshold1'] = lattice[nid]['threshold1'];
+        } else {
+            cond['threshold'] = lattice[nid]['threshold'];
+        }
+
+        currentRuleNodes.unshift(cond);
+        nid = lattice[nid]['parent'];
+    }
+    return currentRuleNodes;
+}
+
 export function postData(url, data, cb) {
     var myHeaders = new Headers();
     myHeaders.append('Content-Type', 'application/json');
 
     if (cb !== undefined) {
-        fetch(`${window.PUBLIC_URL}${url}`, {
+        fetch(`${apidomain}${url}`, {
             method: 'POST',
             mode: 'cors',
             headers: {

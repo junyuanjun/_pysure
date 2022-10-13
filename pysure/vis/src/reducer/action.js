@@ -14,3 +14,5 @@ export const data_select = makeActionCreator(type.SELECT_DATA, 'value');
 
 export const loading_finished = makeActionCreator(type.LOADING_FINISHED, "value");
 export const fetch_data = makeActionCreator(type.FETCH_DATA, "value");
+
+export const set_selected_rule = makeActionCreator(type.SET_SELECTED_RULE, 'value');

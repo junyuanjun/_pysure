@@ -16,3 +16,11 @@ p {
 .conditionText {
     width: 120px
 }
+
+.icon {
+    width: 32px;
+}
+
+.title p{
+    margin-top: 12px;
+}

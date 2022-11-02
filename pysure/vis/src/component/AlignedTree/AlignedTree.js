@@ -43,15 +43,19 @@ const AlignedTree = ( props ) => {
 
     const explore_rule = (node_id) => {
         const currentRule = transform_selected_rule(lattice, node_id);
-        const {set_selected_rule} = props;
+        const {on_rule_explore, env} = props;
 
-        const para = {
-            'dataname': data_value,
-            'rule': currentRule,
+        if (env === 'notebook') {
+            on_rule_explore(currentRule);
+        } else {
+            const para = {
+                'dataname': data_value,
+                'rule': currentRule,
+            }
+            postData("explore_rule/", JSON.stringify(para), (res) => {
+                on_rule_explore(res);
+            })
         }
-        postData("explore_rule/", JSON.stringify(para), (res) => {
-            set_selected_rule(res);
-        } )
     }
 
     const construct_lattice_ui = (pos2r) => {

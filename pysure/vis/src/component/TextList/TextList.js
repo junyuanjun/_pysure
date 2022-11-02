@@ -5,18 +5,22 @@ import React, { useState } from 'react';
 import './TextList.css'
 import {postData, readable_text, transform_selected_rule} from "../../utils/utils";
 
-const TextList = ( {rules, attrs, lattice, target_names, set_selected_rule, r2lattice, data_value} ) => {
+const TextList = ( {rules, attrs, lattice, target_names, on_rule_explore, env, r2lattice, data_value} ) => {
     const explore_rule = (rid, cid) => {
         const node_id = r2lattice[rid][cid]
         const currentRule = transform_selected_rule(lattice, node_id);
 
-        const para = {
-            'dataname': data_value,
-            'rule': currentRule,
+        if (env === 'notebook') {
+            on_rule_explore(currentRule);
+        } else {
+            const para = {
+                'dataname': data_value,
+                'rule': currentRule,
+            }
+            postData("explore_rule/", JSON.stringify(para), (res) => {
+                on_rule_explore(res);
+            } )
         }
-        postData("explore_rule/", JSON.stringify(para), (res) => {
-            set_selected_rule(res);
-        } )
     }
 
     const render_text_rules = () => {

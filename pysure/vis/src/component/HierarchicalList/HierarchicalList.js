@@ -17,7 +17,7 @@ import {set_selected_rule} from "../../reducer/action";
 
 const HierarchicalList = ( props ) => {
     const {attrs, filter_threshold, lattice, rules, preIndex,
-        tot_size, target_names, ctx, data_value,
+        tot_size, target_names, data_value,
     } = props;
 
     const max_r = 15,
@@ -34,19 +34,27 @@ const HierarchicalList = ( props ) => {
     }
 
     const explore_rule = (node_id) => {
+        const {on_rule_explore, env} = props;
         const currentRule = transform_selected_rule(lattice, node_id);
-        const {set_selected_rule} = props;
 
-        const para = {
-            'dataname': data_value,
-            'rule': currentRule,
+        if (env === 'notebook') {
+            on_rule_explore(currentRule);
+        } else {
+            const para = {
+                'dataname': data_value,
+                'rule': currentRule,
+            }
+            postData("explore_rule/", JSON.stringify(para), (res) => {
+                on_rule_explore(res);
+            } )
         }
-        postData("explore_rule/", JSON.stringify(para), (res) => {
-            set_selected_rule(res);
-        } )
     }
 
     const render_hierarchical_list = (svg, chartGroup, summary_size_) => {
+        const canvas = document.getElementById('canvas4text');
+        const ctx = canvas.getContext('2d');
+        ctx.font = '14px sans-serif';
+
         let hlist = lattice;
 
         let list_height = (1+Object.keys(hlist).length) * (glyphCellHeight + rectMarginTop + rectMarginBottom),

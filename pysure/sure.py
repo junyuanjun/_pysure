@@ -93,10 +93,11 @@ class SuRE:
         res['filter_threshold'] = rule_paras
 
         self.rule_result = res
-        
+
     def visualize(self):
         ## setting callbacks
         callbacks = {
+            'explore_rule': self.explore_rule,
         }
 
         ## setting input data
@@ -112,76 +113,47 @@ class SuRE:
             data_dict=input_data,
             callbacks=callbacks )
 
-    def get_preds_histogram( self, preds ):
-        return calculate_preds_histograms(preds)
 
-    def get_reliability_curve( self, event ):
+    def explore_rule(self, rule):
+        df = pd.DataFrame(data=self.data['data'], columns=self.data['columns'])
+        df['y_gt'] = self.data['y_gt']
+        df['y_pred'] = self.data['y_pred']
 
-        ## current model
-        modelPredictions = self.predictions[event['currentmodel']]
-        modelLabels = self.labels[event['currentmodel']]
-        
-        ## getting curve
-        currentcurvedata, instancedata, confusionmatrix, preds, labels, allClassPreds, allClassLabels = get_reliability_curve( event, data=self.data, preds=modelPredictions, labels=modelLabels )
-        
-        ## saving instance data
-        curve = ReliabilityCurve( 
-            tableheader=instancedata['tableheader'], 
-            tablebody=instancedata['tablebody'], 
-            confusionMatrix=confusionmatrix, 
-            preds=preds, 
-            labels=labels,
-            allClassPreds=allClassPreds,
-            allClassLabels=allClassLabels)
-        self.createdCurves.append(curve)
+        ## initialize
+        res = []
 
-        ## getting curve
-        return currentcurvedata
+        # update lattice node info
+        cols = df.columns
 
-    def get_learned_curve( self, event ):
+        for cond in rule:
+            # compare values with condition
+            col = cols[cond['feature']]
+            if (cond['sign'] == 'range'):
+                df = df[(df[col] >= cond['threshold0']) & (df[col] < cond['threshold1'])]
+            elif (cond['sign'] == '<'):
+                df = df[df[col] < cond['threshold']]
+            elif (cond['sign'] == '>'):
+                df = df[df[col] > cond['threshold']]
+            elif (cond['sign'] == '<='):
+                df = df[df[col] <= cond['threshold']]
+            elif (cond['sign'] == '>='):
+                df = df[df[col] >= cond['threshold']]
+            else:
+                print("!!!!!! Error rule !!!!!!")
 
-        selectedCurve = self.createdCurves[event['curveIndex']]
-        learnedCurve = learned_reliability_diagram( selectedCurve.preds, selectedCurve.labels )
+            res.append(self.update_cond_stat(df, cond))
+        return res
 
-        return learnedCurve
 
-    def get_curve_instance_data( self, event ):
-
-        currentInstanceData = {
-            'tableheader':  self.createdCurves[event['curveIndex']].tableheader,
-            'tablebody': self.createdCurves[event['curveIndex']].tablebody,
-            'tableaverages': get_table_average(self.createdCurves[event['curveIndex']].tablebody),
-            'confusionmatrix': self.createdCurves[event['curveIndex']].confusionMatrix,
-            'predshistogram': self.get_preds_histogram(self.createdCurves[event['curveIndex']].preds)
-        }
-
-        return currentInstanceData
-
-    def filter_by_pred_range(self, event ):
-
-        ## getting current curve
-        currentCurve = self.createdCurves[0]
-
-        ## setting conds
-        conds = ( (currentCurve.preds >= event['start']) & (currentCurve.preds <= event['end']) )
-        tablebody = np.array(currentCurve.tablebody)[conds]
-        
-        ## calculating filtered confusion matrix
-        preds = currentCurve.allClassPreds[conds]
-        labels = currentCurve.allClassLabels[conds]
-        confusionMatrix = confusion(preds, labels)
-
+    def update_cond_stat(self, matched_data, cond):
+        n_cls = 2
+        conf_matrix = np.zeros(shape=(n_cls,2))
+        for i in range(n_cls):
+            conf_matrix[i][0] = ((matched_data['y_pred'] == i) & (matched_data['y_pred']!=matched_data['y_gt'])).sum()
+            conf_matrix[i][1] = ((matched_data['y_pred'] == i) & (matched_data['y_pred']==matched_data['y_gt'])).sum()
         return {
-            'tablebody': tablebody.tolist(),
-            'tableheader': currentCurve.tableheader,
-            'tableaverages': get_table_average( tablebody ),
-            'confusionmatrix': confusionMatrix
+            'condition': cond,
+            'support': matched_data.shape[0],
+            'conf_matrix': conf_matrix.tolist()
         }
-
-    def clear_curves(self, event):
-
-        nCurves = len(self.createdCurves)
-        self.createdCurves = []
-
-        return {'ncurves':  nCurves}
 

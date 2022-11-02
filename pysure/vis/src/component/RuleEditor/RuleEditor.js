@@ -1,9 +1,10 @@
 import React, {useEffect, useState} from "react";
 
 import {connect} from "react-redux";
-import {Grid, Button, TextField, Divider} from "@mui/material";
+import {Grid, IconButton, TextField, Divider} from "@mui/material";
 import {renderD3} from "../../hooks/render.hook";
 import * as d3 from "d3";
+import sync_icon from '../sync.png';
 
 import './RuleEditor.css';
 import {bindActionCreators} from "redux";
@@ -144,6 +145,7 @@ const RuleEditor = ( props ) => {
     }
 
     const sync_condition = () => {
+        const {on_rule_explore, env} = props;
         let rule = [];
 
         currentRule.forEach((item, i) => {
@@ -155,13 +157,17 @@ const RuleEditor = ( props ) => {
             })
         })
 
-        const para = {
-            'dataname': data_value,
-            'rule': rule,
+        if (env === 'notebook') {
+            on_rule_explore(rule);
+        } else {
+            const para = {
+                'dataname': data_value,
+                'rule': rule,
+            }
+            postData("explore_rule/", JSON.stringify(para), (res) => {
+                on_rule_explore(res);
+            });
         }
-        postData("explore_rule/", JSON.stringify(para), (res) => {
-            set_selected_rule(res);
-        } )
     }
 
     const render_editable_condition = () => {
@@ -176,17 +182,17 @@ const RuleEditor = ( props ) => {
 
     return <Grid container direction="row" xs={12} style={{justifyContent: 'flex-start'}}>
             <Grid  className="editing-area" direction="column" style={{justifyContent: "flex-end"}}>
-                <div>
-                    <p>Rule(Conditions) for Inspection </p>
-                    <Button onClick={sync_condition}>
-                        sync
-                    </Button>
-                </div>
+                <Grid direction="row" className='title'>
+                    <p style={{display: "inline"}}>Rule(Conditions) for Inspection </p>
+                    <IconButton onClick={sync_condition}>
+                        <img src={sync_icon} className='icon'/>
+                    </IconButton>
+                </Grid>
                 {render_editable_condition()}
             </Grid>
             <Divider orientation='vertical' flexItem/>
-            <Grid  className="distribution-area">
-                <p style={{marginLeft: 20}}>Data Distribution</p>
+            <Grid  className="distribution-area title">
+                <p  style={{marginLeft: 20}}>Data Distribution</p>
                 <svg ref={ref}></svg>
             </Grid>
         </Grid>

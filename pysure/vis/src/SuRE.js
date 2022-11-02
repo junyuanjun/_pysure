@@ -2,7 +2,7 @@
 import './SuRE.css'
 
 // react
-import React, { useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Typography from '@mui/material/Typography';
@@ -50,15 +50,29 @@ function a11yProps(index) {
 const SuRE = ( props ) => {
     const [value, setValue] = React.useState(2);
     const col_order = column_order_by_feat_freq(props.columns, props.rules);
-    const canvas = document.getElementsByClassName('canvas4text'),
-        ctx = canvas[0].getContext('2d');
-    ctx.font = '14px sans-serif';
+
     const attrs = props.columns;
     const tot_size = props.y_gt.length;
     const {lattice, filter_threshold, rules, preIndex, real_min, real_max, node_info, target_names, data,
         set_selected_rule, data_value,
     } = props;
 
+    /* Rule Editing Events */
+    const env = 'notebook';
+    const on_rule_explore = (currentRule) => {
+        // callback
+        const load_rule_stat = (rule_res) => {
+            set_selected_rule(rule_res);
+        }
+
+        let comm_rule_explore_request = new CommAPI('explore_rule', load_rule_stat);
+        comm_rule_explore_request.call(currentRule);
+    }
+    const rule_explore_fn = env === 'notebook' ? on_rule_explore : set_selected_rule;
+    // const env = 'web';
+    // const rule_explore_fn = set_selected_rule;
+
+    /* UI rendering and interactions */
     const handleChange = (event, newValue) => {
         setValue(newValue);
     };
@@ -208,6 +222,7 @@ const SuRE = ( props ) => {
 
             return (
         <Grid direction='column' container>
+            <canvas width={0} height={0} id="canvas4text" ></canvas>
             <Box sx={{ width: '100%', maxHeight: 600}}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <Tabs value={value} onChange={handleChange} aria-label="basic tabs">
@@ -229,6 +244,7 @@ const SuRE = ( props ) => {
                                  target_names = {target_names}
                                  r2pos={r2pos} pos2r={pos2r}
                                  r2lattice={r2lattice} lattice2r={lattice2r}
+                                 on_rule_explore={rule_explore_fn} env={env}
                     />
                 </TabPanel>
                 <TabPanel value={value} index={1}>
@@ -238,20 +254,20 @@ const SuRE = ( props ) => {
                               target_names = {target_names}
                               r2lattice={r2lattice}
                               data_value={data_value}
-                              set_selected_rule={set_selected_rule}
+                              on_rule_explore={rule_explore_fn} env={env}
                     />
                 </TabPanel>
                 <TabPanel value={value} index={2}>
-                    <HierarchicalList ctx={ctx}
+                    <HierarchicalList
                         attrs={attrs} lattice={lattice}
                         filter_threshold={filter_threshold}
                         rules = {rules}
                         col_order={col_order}
                         tot_size = {tot_size}
                         preIndex = {preIndex}
-                                      data_value={data_value}
-                                      target_names = {target_names}
-                        set_selected_rule={set_selected_rule}
+                        data_value={data_value}
+                        target_names = {target_names}
+                        on_rule_explore={rule_explore_fn} env={env}
                     />
                 </TabPanel>
             </Box>
@@ -262,6 +278,7 @@ const SuRE = ( props ) => {
                                 tot_size={tot_size} target_names={target_names}
                                 data_value={data_value}
                                 data={data}
+                                on_rule_explore={rule_explore_fn} env={env}
                     />
                     <RuleSuggestion />
                 </Grid>

@@ -13,19 +13,21 @@ import {postData, readable_text, transform_selected_rule} from "../../utils/util
 
 // third-party
 import * as d3 from 'd3';
+import {Checkbox, FormControlLabel} from "@mui/material";
 
 
 const AlignedTree = ( props ) => {
     const {attrs, lattice, filter_threshold, col_order, rules,
         real_min, real_max, tot_size, target_names, data_value,
         } = props;
+    const [checked, setChecked] = useState(true);
 
     const unit_width =25, unit_height = 20,
         margin_h = 10, margin_v = 80,
         font_size = 14,
         max_r = 15,
         glyphCellHeight = 10,
-        legend_height = 20,
+        legend_height = 10,
         sqWidth = glyphCellHeight,
         feat_name_height = 80;
     const width = 900;
@@ -33,12 +35,43 @@ const AlignedTree = ( props ) => {
 
     const apply_lattice_scale = true;
 
+    const handleScaleChecked = (evt) => {
+        setChecked(evt.target.checked);
+
+
+    }
+
     const clear_plot = (svgref) => {
         svgref.selectAll('*').remove();
     }
 
-    const render_legend = (headerGroup) => {
+    const render_legend = (headerGroup, sizeScale) => {
+        let yoffset = 2, xoffset = 7;
+        let indent = 20;
 
+        let legend = headerGroup
+            // .style("width", legendWidth)
+            // .style("height", summary_size_.range()[1]+2)
+            .append("g")
+            .attr("transform", `translate(${indent}, 2)`);
+
+        let ranges = [0.3, .6, .9];
+
+        ranges.forEach((val) => {
+            let size = sizeScale.range()[1] * val;
+            legend.append('rect')
+                .attr('x', xoffset)
+                .attr('y', sizeScale.range()[1] /2 - size / 2)
+                .attr('width', size)
+                .attr('height', size)
+                .attr('fill', 'lightgrey')
+                .attr('stroke','none');
+            legend.append('text')
+                .attr('x', xoffset + size + 2)
+                .attr('y', yoffset + sizeScale.range()[1] /2)
+                .text(`${val*100}%`);
+            xoffset += size + 10 + indent*2;
+        })
     }
 
     const explore_rule = (node_id) => {
@@ -56,6 +89,14 @@ const AlignedTree = ( props ) => {
                 on_rule_explore(res);
             })
         }
+    }
+
+    const node_hover = (node_id) => {
+
+    }
+
+    const node_unhover = (node_id) => {
+
     }
 
     const construct_lattice_ui = (pos2r) => {
@@ -292,12 +333,12 @@ const AlignedTree = ( props ) => {
             .on('click', (evt, d) => {
                 explore_rule(d['node_id'])
             })
-            // .on('mouseover', d=>{
-            //     node_hover(d['node_id']);
-            // })
-            // .on('mouseout', d=>{
-            //     node_unhover(d['node_id']);
-            // })
+            .on('mouseover', d=>{
+                node_hover(d['node_id']);
+            })
+            .on('mouseout', d=>{
+                node_unhover(d['node_id']);
+            })
 
         conf_mat_nodes.append('text')
             .attr('class', 'lattice_cond')
@@ -341,7 +382,7 @@ const AlignedTree = ( props ) => {
                 .attr("transform", `translate(${margin.left},${margin.top})`);
             const chartGroup = svgref
                 .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top+legend_height})`);
+                .attr("transform", `translate(${margin.left},${margin.top+(checked ? legend_height : 0)})`);
 
             // svg size
             const svgWidthRange = [0, svgref.node().getBoundingClientRect().width - margin.left - margin.right];
@@ -364,14 +405,15 @@ const AlignedTree = ( props ) => {
             });
 
             // creating legend
-            // TODO: to add size legend
-            render_legend(headerGroup);
+            render_legend(headerGroup, sizeScale);
 
             // creating feature aligned tree
             render_feature_aligned_tree(svgref, chartGroup, yScale, sizeScale, rectXst);
         }
     )
     return   <div className='aligned-tree-wrapper' style={{maxHeight: height, overflow: 'auto'}}>
+        <FormControlLabel control={<Checkbox checked={checked} onChange={handleScaleChecked} />}
+                          label="Apply Size Scaling" />
         <div className='aligned-tree-container'>
             <svg ref={ref}></svg>
         </div>

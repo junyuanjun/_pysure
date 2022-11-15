@@ -45,7 +45,7 @@ export const column_order_by_feat_freq = (attrs, rules) => {
     col_info.sort((a, b) => (a.freq > b.freq) ? -1 : 1);
     col_info.forEach((d, i) => col_order[d.idx] = i);
 
-    return col_order;
+    return [col_order, col_info];
 }
 
 export const readable_text = (val) => {

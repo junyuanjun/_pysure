@@ -19,6 +19,7 @@ import {renderD3} from "./hooks/render.hook";
 import RuleEditor from "./component/RuleEditor/RuleEditor";
 import RuleSuggestion from "./component/RuleSuggestion/RuleSuggestion";
 import {Grid} from "@mui/material";
+import HierarchicalTable from "./component/HierarchicalTable/HierarchicalTable";
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -48,8 +49,8 @@ function a11yProps(index) {
 }
 
 const SuRE = ( props ) => {
-    const [value, setValue] = React.useState(2);
-    const col_order = column_order_by_feat_freq(props.columns, props.rules);
+    const [value, setValue] = React.useState(3);
+    const [col_order, col_info] = column_order_by_feat_freq(props.columns, props.rules);
 
     const attrs = props.columns;
     const tot_size = props.y_gt.length;
@@ -58,7 +59,6 @@ const SuRE = ( props ) => {
     } = props;
 
     /* Rule Editing Events */
-    const env = 'notebook';
     const on_rule_explore = (currentRule) => {
         // callback
         const load_rule_stat = (rule_res) => {
@@ -68,9 +68,10 @@ const SuRE = ( props ) => {
         let comm_rule_explore_request = new CommAPI('explore_rule', load_rule_stat);
         comm_rule_explore_request.call(currentRule);
     }
-    const rule_explore_fn = env === 'notebook' ? on_rule_explore : set_selected_rule;
-    // const env = 'web';
-    // const rule_explore_fn = set_selected_rule;
+    // const env = 'notebook';
+    // const rule_explore_fn = env === 'notebook' ? on_rule_explore : set_selected_rule;
+    const env = 'web';
+    const rule_explore_fn = set_selected_rule;
 
     /* UI rendering and interactions */
     const handleChange = (event, newValue) => {
@@ -229,6 +230,7 @@ const SuRE = ( props ) => {
                         <Tab label={<span className='tab-text'>Feature Aligned Tree</span>} {...a11yProps(0)} />
                         <Tab label={<span className='tab-text'>Text List</span>} {...a11yProps(1)}/>
                         <Tab label={<span className='tab-text'>Hierarchical List</span>} {...a11yProps(2)} />
+                        <Tab label={<span className='tab-text'>Hierarchical Table</span>} {...a11yProps(3)}/>
                     </Tabs>
                 </Box>
                 <TabPanel value={value} index={0}>
@@ -263,6 +265,20 @@ const SuRE = ( props ) => {
                         filter_threshold={filter_threshold}
                         rules = {rules}
                         col_order={col_order}
+                        tot_size = {tot_size}
+                        preIndex = {preIndex}
+                        data_value={data_value}
+                        target_names = {target_names}
+                        on_rule_explore={rule_explore_fn} env={env}
+                    />
+                </TabPanel>
+                <TabPanel value={value} index={3}>
+                    <HierarchicalTable
+                        attrs={attrs} lattice={lattice}
+                        filter_threshold={filter_threshold}
+                        rules = {rules}
+                        col_order={col_order}
+                        col_info = {col_info}
                         tot_size = {tot_size}
                         preIndex = {preIndex}
                         data_value={data_value}

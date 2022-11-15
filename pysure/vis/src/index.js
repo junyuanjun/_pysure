@@ -21,9 +21,8 @@ const store = createStore(SelectReducer);
 // </Provider>;
 // ReactDOM.render(root, document.getElementById('root'));
 
+
 export function renderSuRE(divName, fetched_data){
-
-
     ReactDOM.render(
         <Provider store={store}>
             <SuRE

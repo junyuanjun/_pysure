@@ -7,7 +7,7 @@ from scipy.spatial import distance
 
 class Forest():
     def initialize(self, node_info, real_min, real_max, real_percentile, df, y_pred, y_gt,
-        rules, target_names, n_cls=2, error_analysis=False):
+        rules, target_names, error_analysis=False):
         self.node_info = { int(x) : node_info[x] for x in node_info }
         # self.node_info = node_info
         self.real_min = real_min
@@ -33,7 +33,7 @@ class Forest():
         self.error_analysis = error_analysis
         if (error_analysis):
             self.error_label = (self.y_gt != self.y_pred).astype(int)
-        self.n_cls = n_cls
+        self.n_cls = len(target_names)
 
         self.real_percentile = real_percentile
         self.rep_range = np.zeros(shape=(len(real_min), real_percentile['num_bin'], 2))
@@ -651,7 +651,7 @@ class Forest():
         
         # initialize data to be matched
         idx = [i for i, x in enumerate(match_vector) if x>0]
-        self.lattice[node_id]['matched_data'] = idx
+#         self.lattice[node_id]['matched_data'] = idx
 
         if (len(self.lattice[node_id]['children_id'])==0):
             return

@@ -12,8 +12,8 @@ from notebookjs import execute_js
 import numpy as np
 import pandas as pd
 
-from surrogate_rule import forest_info
-from surrogate_rule import tree_node_info
+from .surrogate_rule import forest_info
+from .surrogate_rule import tree_node_info
 
 default_rule_paras= {
             "support": 5,
@@ -24,13 +24,14 @@ default_rule_paras= {
 
 class SuRE:
 
-    def __init__(self, data, rule_paras=None, error_analysis=False) -> None:
+    def __init__(self, data, rule_paras=None, error_class= None, error_analysis=False) -> None:
         ## user-generated data
         self.data = data
         if (rule_paras):
             self.rule_paras = rule_paras
         else:
             self.rule_paras = default_rule_paras
+        self.error_class = error_class
 
         self.error_analysis = error_analysis
 
@@ -79,7 +80,7 @@ class SuRE:
                           surrogate_obj.percentile_info,
                           df, data['y_pred'], data['y_gt'],
                           forest_obj.rule_lists,
-                          data['target_names'], 2,
+                          data['target_names'],
                           error_analysis = self.error_analysis,
                          )
         forest.initialize_rule_match_table()

@@ -11,7 +11,7 @@ import {postData, readable_text, transform_selected_rule} from "../../utils/util
 
 // third-party
 import * as d3 from 'd3';
-import {conf_fill} from "../../utils/const";
+import {colorCate} from "../../utils/const";
 import {set_selected_rule} from "../../reducer/action";
 
 const HierarchicalTable = ( props ) => {
@@ -25,9 +25,12 @@ const HierarchicalTable = ( props ) => {
         glyphCellHeight = 10,
         sqWidth = 10,
         cellWidth = 80,
-        feat_name_height = 30;
+        feat_name_height = 30,
+        root_indent = 20,
+        line_indent = 100;
+
     const width = 900;
-    const height = 600;
+    const height = 500;
 
     const clear_plot = (svgref) => {
         svgref.selectAll('*').remove();
@@ -38,8 +41,9 @@ const HierarchicalTable = ( props ) => {
 
     }
 
-    const render_plot_header = (chartGroup, yScale) => {
+    const render_plot_header = (svg, chartGroup, yScale, x_offset) => {
         // render feature names
+        let max_x = 0
         let column = chartGroup.append('g')
             .attr('class', 'attr_name')
             .selectAll(".column").data(attrs)
@@ -47,8 +51,11 @@ const HierarchicalTable = ( props ) => {
             .attr("class", `column`)
             .attr('id', (d,i)=>`col-${i}`)
             .attr("transform", function(d, i) {
-                return `translate(${col_order[i]*cellWidth+10}, 
-            ${yScale(0)})rotate(330)`; });
+                if (col_info[col_order[i]].freq > 0) {
+                    max_x = d3.max([max_x, col_order[i]*cellWidth+10])
+                }
+                return `translate(${col_order[i]*cellWidth+10}, ${yScale(0)})rotate(330)`;
+            });
 
         column.append("text")
             .attr("y", yScale.bandwidth() / 1.5 - 5)
@@ -64,6 +71,7 @@ const HierarchicalTable = ( props ) => {
             })
             .append('title')
             .text(d => d);
+        svg.attr('width', x_offset + max_x + cellWidth);
     }
 
     const explore_rule = (node_id) => {
@@ -100,10 +108,11 @@ const HierarchicalTable = ( props ) => {
 
         let max_depth = d3.max(Object.keys(hlist), key => hlist[key].depth),
             unit_width = 30,
-            list_width = unit_width * (1+max_depth),
+            // list_width = unit_width * (max_depth),
+            list_width = line_indent,
             xPos = d3.scaleLinear()
                 .domain([0, max_depth+1])
-                .range([0, list_width]);
+                .range([root_indent, list_width*0.7]);
 
         // caclculate yoffset
         let y_offset = {}, count = 0;
@@ -123,8 +132,7 @@ const HierarchicalTable = ( props ) => {
 
         let bar_width = 0;
 
-        list_svg.attr('width', `${list_width+text_width+summary_size_.range()[1]*3}`)
-            .attr('height', list_height + count * unit_height)
+        list_svg.attr('height', list_height + count * unit_height)
         svg.attr('height', list_height + count * unit_height);
 
         // rule content
@@ -142,7 +150,7 @@ const HierarchicalTable = ( props ) => {
 
         // add confusion matrix bar
         rule_g.append('g')
-            .attr('transform', d => `translate(0, ${yPos(preIndex[d.node_id])+y_offset[d.node_id]})`)
+            .attr('transform', d => `translate(${line_indent}, ${yPos(preIndex[d.node_id])+y_offset[d.node_id]})`)
             // .attr('transform', d => `translate(${d.text_width})`)
             .selectAll('.hlist_conf_mat')
             .data((d) => {
@@ -182,11 +190,13 @@ const HierarchicalTable = ( props ) => {
             .attr('y', -unit_height/2-rectMarginTop)
             .attr('width', d => d.width)
             .attr('height', unit_height)
-            .attr('fill', (d, i) => conf_fill[i]);
+            .attr('fill', (d, i) => {
+                return i % 2===0 ? `url(#false-class-${i/2})` : colorCate[Math.floor(i/2)]
+            });
 
 
         // condition content
-        bar_width += 10;
+        bar_width += 10 + line_indent;
         rule_g.append('g')
             .attr("class", "rule_item")
             // .attr("transform", d => `translate(${summary_size_(lattice[d['node_id']]['support']) * 3 + 5})`)
@@ -207,7 +217,7 @@ const HierarchicalTable = ( props ) => {
                         }
                         content += readable_text(node['threshold']) + " ";
                     } else {
-                        content += " from " + readable_text(node['threshold0']) + " to " + readable_text(node['threshold1']) + " ";
+                        content += "[" + readable_text(node['threshold0']) + ", " + readable_text(node['threshold1']) + ")";
                     }
                     row_conditions.push({"x": col_order[node['feature']]*cellWidth, "content": content});
                     node_id = node['parent'];
@@ -245,38 +255,83 @@ const HierarchicalTable = ( props ) => {
                 right_border = i+1;
             }else break;
         }
-        right_border = right_border * cellWidth;
+        right_border = right_border * cellWidth + line_indent;
 
         let rule_dividers = list_svg.append('g')
-            .attr('class', 'list_links')
+            .attr('class', 'subgroup_divider')
 
         rule_dividers.selectAll('.rule_divider')
             .data(dividers).enter()
             .append('line')
             .attr('class', 'rule_divider')
-            .attr('x1', 0)
+            .attr('x1', line_indent)
             .attr('x2', right_border)
             .attr('y1', d => yPos(preIndex[d])+y_offset[d] + 5)
             .attr('y2', d => yPos(preIndex[d])+y_offset[d] + 5)
             .attr('stroke', 'lightgrey')
 
-        // let link_lines = list_links.selectAll('.list_link')
-        //     .data(links)
-        //     .enter()
-        //     .append('path')
-        //     .attr('class', 'list_link')
-        //     .attr("transform", `translate(${bar_width})`)
-        //     .attr('id', d => `hlist-link-${d['source']}-${d['target']}`)
-        //     .attr("d", d => {
-        //         let arr = [
-        //             {'x': xPos(hlist[d.source].depth)+7, 'y': yPos(preIndex[hlist[d.source].node_id])+y_offset[d.source]},
-        //             {'x': xPos(hlist[d.source].depth)+7, 'y': yPos(preIndex[hlist[d.target].node_id])+y_offset[d.target]-5},
-        //             {'x': xPos(hlist[d.target].depth), 'y': yPos(preIndex[hlist[d.target].node_id])+y_offset[d.target]-5},
-        //         ];
-        //         return line(arr);
-        //     })
-        //     .attr('stroke', 'darkgrey')
-        //     .attr('fill', "none");
+        // hierarchical lines
+        let links = [], initial_circles = [];
+        for (let i = 1; i < Object.keys(hlist).length; i++) {
+
+            if (hlist[i]['children_id'].length > 0) {
+                for (let j = 0; j < hlist[i]['children_id'].length; j++){
+                    links.push({
+                        'source': i,
+                        'target': hlist[i]['children_id'][j]
+                    })
+                }
+            }
+            if (hlist[i]['parent'] === 0) {
+                links.push({
+                    'source': 0,
+                    'target': i
+                });
+                initial_circles.push(i);
+            }
+        }
+
+        let list_links = list_svg.append('g')
+            .attr('class', 'list_links')
+
+        let line = d3.line()
+            .x(d=>d.x)
+            .y(d=>d.y);
+
+        list_links.selectAll('.list_link')
+            .data(links)
+            .enter()
+            .append('path')
+            .attr('class', 'list_link')
+            .attr('id', d => `hlist-link-${d['source']}-${d['target']}`)
+            .attr("d", d => {
+                let arr = [];
+                if (d.source === 0) {
+                    arr = [
+                        {'x': xPos(hlist[d.target].depth)-root_indent,
+                            'y': yPos(preIndex[hlist[d.target].node_id])+y_offset[d.target]-5},
+                        {'x': list_width-2,
+                            'y': yPos(preIndex[hlist[d.target].node_id])+y_offset[d.target]-5},
+                    ]
+                } else {
+                    arr = [
+                        {'x': xPos(hlist[d.source].depth), 'y': yPos(preIndex[hlist[d.source].node_id])+y_offset[d.source]-5},
+                        {'x': xPos(hlist[d.source].depth), 'y': yPos(preIndex[hlist[d.target].node_id])+y_offset[d.target]-5},
+                        {'x': list_width-2, 'y': yPos(preIndex[hlist[d.target].node_id])+y_offset[d.target]-5},
+                    ];
+                }
+                return line(arr);
+            })
+            .attr('stroke', 'darkgrey')
+            .attr('fill', "none");
+        list_links.selectAll('.list_initial_circle')
+            .data(initial_circles)
+            .enter()
+            .append('circle')
+            .attr('class', 'list_initial_circle')
+            .attr("cx", d => xPos(hlist[d].depth)-root_indent)
+            .attr("cy", d => yPos(preIndex[hlist[d].node_id])+y_offset[d]-5)
+            .attr('r', 2)
     }
 
     const ref = renderD3(
@@ -308,28 +363,25 @@ const HierarchicalTable = ( props ) => {
             });
 
             // creating groups
+            const x_offset = margin.left + line_indent+ 10+ sizeScale.range()[1];
             const headerGroup = svgref
                 .append("g")
-                .attr("transform", `translate(${margin.left + 10+ sizeScale.range()[1] },
+                .attr("transform", `translate(${x_offset},
                     ${margin.top+feat_name_height})`);
             const chartGroup = svgref
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top+feat_name_height})`);
 
-
-            svgref.attr('width', width);
-
-
             // render header
-            render_plot_header(headerGroup, yScale);
+            render_plot_header(svgref, headerGroup, yScale, x_offset);
 
             // creating feature aligned table
             render_hierarchical_table(svgref, chartGroup, sizeScale);
         }
     )
 
-    return  <div className='hierarchical-list-wrapper' style={{maxHeight: height}}>
-        <div className='hierarchical-list-container'>
+    return  <div className='hierarchical-list-wrapper' >
+        <div className='hierarchical-list-container' style={{maxHeight: height, maxWidth: width, overflow: 'auto'}}>
             <svg ref={ref}></svg>
         </div>
     </div>;

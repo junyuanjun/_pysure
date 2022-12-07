@@ -31,7 +31,7 @@ const AlignedTree = ( props ) => {
         sqWidth = glyphCellHeight,
         feat_name_height = 80;
     const width = 900;
-    const height = 600;
+    const height = 500;
 
     const apply_lattice_scale = true;
 
@@ -160,7 +160,7 @@ const AlignedTree = ( props ) => {
             .text(d => d);
 
         lattice_chart.attr('width', col_count * (unit_width+margin_h)+feat_name_height*1.41)
-            .attr('height', (filter_threshold['num_feat']) * (unit_height+margin_v))
+            .attr('height', (filter_threshold['num_feat']) * (unit_height+margin_v+1) + summary_size_.range()[1])
 
         // render divider line
         let view = chartGroup.append('g')
@@ -284,7 +284,7 @@ const AlignedTree = ( props ) => {
             .attr('y', d=>d.y)
             .attr('width', d => d.width)
             .attr('height', d => d.height)
-            .attr('fill', (d, i) => conf_fill[i]);
+            .attr('fill', (d, i) => i % 2===0 ? `url(#false-class-${i/2})` : colorCate[Math.floor(i/2)]);
 
         // condition metaphor
         conf_mat_nodes.selectAll(".rule-fill")
@@ -411,10 +411,10 @@ const AlignedTree = ( props ) => {
             render_feature_aligned_tree(svgref, chartGroup, yScale, sizeScale, rectXst);
         }
     )
-    return   <div className='aligned-tree-wrapper' style={{maxHeight: height, overflow: 'auto'}}>
+    return   <div className='aligned-tree-wrapper' >
         <FormControlLabel control={<Checkbox checked={checked} onChange={handleScaleChecked} />}
                           label="Apply Size Scaling" />
-        <div className='aligned-tree-container'>
+        <div className='aligned-tree-container' style={{maxHeight: height, maxWidth: width, overflow: 'auto'}}>
             <svg ref={ref}></svg>
         </div>
     </div>;

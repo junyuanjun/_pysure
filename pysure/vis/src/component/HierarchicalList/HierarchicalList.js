@@ -12,7 +12,7 @@ import {postData, readable_text, transform_selected_rule} from "../../utils/util
 
 // third-party
 import * as d3 from 'd3';
-import {conf_fill} from "../../utils/const";
+import {colorCate, conf_fill} from "../../utils/const";
 import {set_selected_rule} from "../../reducer/action";
 
 const HierarchicalList = ( props ) => {
@@ -27,7 +27,7 @@ const HierarchicalList = ( props ) => {
         rectMarginBottom = 5,
         sqWidth = glyphCellHeight;
     const width = 900;
-    const height = 600;
+    const height = 500;
 
     const clear_plot = (svgref) => {
         svgref.selectAll('*').remove();
@@ -149,7 +149,7 @@ const HierarchicalList = ( props ) => {
             .attr('y', -unit_height/2-rectMarginTop)
             .attr('width', d => d.width)
             .attr('height', unit_height)
-            .attr('fill', (d, i) => conf_fill[i]);
+            .attr('fill', (d, i) => i % 2===0 ? `url(#false-class-${i/2})` : colorCate[Math.floor(i/2)]);
 
 
         // condition content
@@ -287,8 +287,8 @@ const HierarchicalList = ( props ) => {
         }
     )
 
-    return  <div className='hierarchical-list-wrapper' style={{maxHeight: height}}>
-        <div className='hierarchical-list-container'>
+    return  <div className='hierarchical-list-wrapper'>
+        <div className='hierarchical-list-container' style={{maxHeight: height, maxWidth: width, overflow: 'auto'}}>
             <svg ref={ref}></svg>
         </div>
     </div>;

@@ -18,8 +18,9 @@ import {colorCate, MAXINT} from "./utils/const";
 import {renderD3} from "./hooks/render.hook";
 import RuleEditor from "./component/RuleEditor/RuleEditor";
 import RuleSuggestion from "./component/RuleSuggestion/RuleSuggestion";
-import {Grid} from "@mui/material";
+import {Checkbox, FormControlLabel, FormLabel, Grid, Radio, RadioGroup} from "@mui/material";
 import HierarchicalTable from "./component/HierarchicalTable/HierarchicalTable";
+import * as d3 from 'd3';
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -50,6 +51,7 @@ function a11yProps(index) {
 
 const SuRE = ( props ) => {
     const [value, setValue] = React.useState(3);
+    const [checked, setChecked] = React.useState(true);
     const [col_order, col_info] = column_order_by_feat_freq(props.columns, props.rules);
 
     const attrs = props.columns;
@@ -57,6 +59,9 @@ const SuRE = ( props ) => {
     const {lattice, filter_threshold, rules, preIndex, real_min, real_max, node_info, target_names, data,
         set_selected_rule, data_value,
     } = props;
+
+    const legend_width = 900;
+    const legend_height = 50;
 
     /* Rule Editing Events */
     const on_rule_explore = (currentRule) => {
@@ -78,28 +83,84 @@ const SuRE = ( props ) => {
         setValue(newValue);
     };
 
+    const handleErrorChecked = (evt) => {
+        setChecked(evt.target.checked);
+        update_legend();
+    }
+
     const clear_plot = (svgref) => {
         svgref.selectAll('*').remove();
+    }
+
+    const render_false_pattern = (headerGroup, fillColor, id) => {
+        let pattern = headerGroup.append("pattern")
+            .attr("id", id)
+            .attr("class", 'false_class')
+            .attr("patternUnits", "userSpaceOnUse")
+            .attr("width", "4")
+            .attr("height", "4");
+
+        pattern.append('rect')
+            .attr('width', 4)
+            .attr('height', 4)
+            .attr('fill', fillColor);
+
+        pattern.append('path')
+            .attr('d', "M-1,1 l2,-2 M0,4 l4,-4 M3,5 l2,-2");
     }
 
     const render_legend = (headerGroup) => {
         props.target_names.forEach((d, i) => {
             // create new false patterns
-            let pattern = headerGroup.append("pattern")
-                .attr("id", `false-class-${i}`)
-                .attr("class", 'false_class')
-                .attr("patternUnits", "userSpaceOnUse")
-                .attr("width", "4")
-                .attr("height", "4");
+            render_false_pattern(headerGroup, colorCate[i],`false-class-${i}`)
+        });
+        render_false_pattern(headerGroup, 'white', `false-class`)
 
-            pattern.append('rect')
-                .attr('width', 4)
-                .attr('height', 4)
-                .attr('fill', colorCate[i]);
+        update_legend();
+    }
 
-            pattern.append('path')
-                .attr('d', "M-1,1 l2,-2 M0,4 l4,-4 M3,5 l2,-2");
-        })
+    const update_legend = () => {
+        const headerGroup = d3.select('#widget-legend');
+        const bar_size = 20, margin = 20;
+        const canvas = document.getElementById('canvas4text');
+        const ctx = canvas.getContext('2d');
+        ctx.font = '12px sans-serif';
+
+        let legend_group = [], x = margin, y = 0;
+        target_names.forEach((d, i) => {
+            legend_group.push({
+                'x': x,
+                'y': y,
+                'name': target_names[i],
+                'fill': colorCate[i%colorCate.length]
+            })
+            x += bar_size + margin + ctx.measureText(target_names[i]).width;
+            if (x > legend_width) {
+                x = margin;
+                y += bar_size + margin;
+            }
+        });
+        if (checked) {
+            legend_group.push({
+                'x': x, 'y': y, 'name': "error", 'fill': `url(#false-class)`
+            })
+        }
+
+        const class_legend = headerGroup.selectAll('.legend_rect')
+            .data(legend_group)
+            .join('g')
+            .attr('class', 'legend_rect');
+
+        class_legend.append('rect')
+            .attr('x', d => d.x)
+            .attr('y', d => d.y)
+            .attr('width', bar_size)
+            .attr('height', bar_size)
+            .attr('fill', d => d.fill)
+        class_legend.append('text')
+            .attr('x', d => d.x + bar_size+2)
+            .attr('y', d => d.y+14)
+            .text(d => d.name);
     }
 
     const construct_lattice = () => {
@@ -221,7 +282,7 @@ const SuRE = ( props ) => {
             render_legend(headerGroup);
         })
 
-            return (
+    return (
         <Grid direction='column' container>
             <canvas width={0} height={0} id="canvas4text" ></canvas>
             <Box sx={{ width: '100%', maxHeight: 600}}>
@@ -247,6 +308,7 @@ const SuRE = ( props ) => {
                                  r2pos={r2pos} pos2r={pos2r}
                                  r2lattice={r2lattice} lattice2r={lattice2r}
                                  on_rule_explore={rule_explore_fn} env={env}
+                                 show_err_checked={checked}
                     />
                 </TabPanel>
                 <TabPanel value={value} index={1}>
@@ -257,6 +319,7 @@ const SuRE = ( props ) => {
                               r2lattice={r2lattice}
                               data_value={data_value}
                               on_rule_explore={rule_explore_fn} env={env}
+                              show_err_checked={checked}
                     />
                 </TabPanel>
                 <TabPanel value={value} index={2}>
@@ -270,6 +333,7 @@ const SuRE = ( props ) => {
                         data_value={data_value}
                         target_names = {target_names}
                         on_rule_explore={rule_explore_fn} env={env}
+                        show_err_checked={checked}
                     />
                 </TabPanel>
                 <TabPanel value={value} index={3}>
@@ -284,10 +348,13 @@ const SuRE = ( props ) => {
                         data_value={data_value}
                         target_names = {target_names}
                         on_rule_explore={rule_explore_fn} env={env}
+                        show_err_checked={checked}
                     />
                 </TabPanel>
             </Box>
-            <svg ref={ref} width={0} height={0}></svg>
+            <FormControlLabel control={<Checkbox checked={checked} onChange={handleErrorChecked} />}
+                              label="Show Error Distribution" style={{marginLeft: 20}} />
+            <svg ref={ref} id="widget-legend" width={legend_width} height={legend_height}></svg>
             <Grid direction="row" justifyContent='flex-start' style={{marginLeft: 20}}>
                 <Grid direction="column">
                     <RuleEditor attrs={attrs} filter_threshold={filter_threshold}

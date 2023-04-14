@@ -18,7 +18,7 @@ import {Checkbox, FormControlLabel} from "@mui/material";
 
 const AlignedTree = ( props ) => {
     const {attrs, lattice, filter_threshold, col_order, rules,
-        real_min, real_max, tot_size, target_names, data_value,
+        real_min, real_max, tot_size, target_names, data_value, show_err_checked
         } = props;
     const [checked, setChecked] = useState(true);
 
@@ -37,8 +37,6 @@ const AlignedTree = ( props ) => {
 
     const handleScaleChecked = (evt) => {
         setChecked(evt.target.checked);
-
-
     }
 
     const clear_plot = (svgref) => {
@@ -284,7 +282,7 @@ const AlignedTree = ( props ) => {
             .attr('y', d=>d.y)
             .attr('width', d => d.width)
             .attr('height', d => d.height)
-            .attr('fill', (d, i) => i % 2===0 ? `url(#false-class-${i/2})` : colorCate[Math.floor(i/2)]);
+            .attr('fill', (d, i) => i % 2===0 && show_err_checked ? `url(#false-class-${i/2})` : colorCate[Math.floor(i/2)]);
 
         // condition metaphor
         conf_mat_nodes.selectAll(".rule-fill")

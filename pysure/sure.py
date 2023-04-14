@@ -15,15 +15,21 @@ import pandas as pd
 from .surrogate_rule import forest_info
 from .surrogate_rule import tree_node_info
 
-default_rule_paras= {
+default_rule_paras = {
             "support": 5,
             "fidelity": .85,
             "num_feat": 4,
             "num_bin": 3,
         }
 
-class SuRE:
+default_error_rule_paras = {
+           "support": 5,
+           "fidelity": .35,
+           "num_feat": 4,
+           "num_bin": 3,
+       }
 
+class SuRE:
     def __init__(self, data, rule_paras=None, error_class= None, error_analysis=False) -> None:
         ## user-generated data
         self.data = data
@@ -147,7 +153,7 @@ class SuRE:
 
 
     def update_cond_stat(self, matched_data, cond):
-        n_cls = 2
+        n_cls = len(self.data['target_names'])
         conf_matrix = np.zeros(shape=(n_cls,2))
         for i in range(n_cls):
             conf_matrix[i][0] = ((matched_data['y_pred'] == i) & (matched_data['y_pred']!=matched_data['y_gt'])).sum()

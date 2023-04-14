@@ -9,7 +9,7 @@ import sync_icon from '../sync.png';
 import './RuleEditor.css';
 import {bindActionCreators} from "redux";
 import * as actions from "../../reducer/action";
-import {conf_fill} from "../../utils/const";
+import {colorCate} from "../../utils/const";
 import {postData} from "../../utils/utils";
 
 
@@ -86,8 +86,7 @@ const RuleEditor = ( props ) => {
             .attr('y', -glyphCellHeight/2)
             .attr('height', glyphCellHeight)
             .attr('width', d => d.width)
-            .attr('fill', (d, i) => conf_fill[i]);
-
+            .attr('fill', (d, i) => i%2===0 ? `url(#false-class-${i/2})` : colorCate[Math.floor(i/2)]);
     }
 
 

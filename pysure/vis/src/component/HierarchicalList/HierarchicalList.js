@@ -17,7 +17,7 @@ import {set_selected_rule} from "../../reducer/action";
 
 const HierarchicalList = ( props ) => {
     const {attrs, filter_threshold, lattice, rules, preIndex,
-        tot_size, target_names, data_value,
+        tot_size, target_names, data_value, show_err_checked
     } = props;
 
     const max_r = 15,
@@ -149,7 +149,7 @@ const HierarchicalList = ( props ) => {
             .attr('y', -unit_height/2-rectMarginTop)
             .attr('width', d => d.width)
             .attr('height', unit_height)
-            .attr('fill', (d, i) => i % 2===0 ? `url(#false-class-${i/2})` : colorCate[Math.floor(i/2)]);
+            .attr('fill', (d, i) => i % 2===0 && show_err_checked ? `url(#false-class-${i/2})` : colorCate[Math.floor(i/2)]);
 
 
         // condition content

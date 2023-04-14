@@ -10,3 +10,7 @@ p{
     stroke:black;
     stroke-width:.5;
 }
+
+.legend_rect {
+    text-anchor: start;
+}

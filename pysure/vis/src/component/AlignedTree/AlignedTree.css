@@ -38,3 +38,7 @@ text {
     /*visibility: hidden;*/
     font-size: 10px;
 }
+
+.lattice_conf_mat {
+    stroke: none;
+}

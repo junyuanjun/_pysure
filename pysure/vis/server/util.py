@@ -37,9 +37,9 @@ def explore_rule(dataname, rule):
 
 
 def update_cond_stat(matched_data, cond):
-    n_cls = 2
-    conf_matrix = np.zeros(shape=(n_cls,2))
-    for i in range(n_cls):
+    n_class = np.max([matched_data['y_pred'], matched_data['y_pred']]) + 1
+    conf_matrix = np.zeros(shape=(n_class,2))
+    for i in range(n_class):
         conf_matrix[i][0] = ((matched_data['y_pred'] == i) & (matched_data['y_pred']!=matched_data['y_gt'])).sum()
         conf_matrix[i][1] = ((matched_data['y_pred'] == i) & (matched_data['y_pred']==matched_data['y_gt'])).sum()
     return {

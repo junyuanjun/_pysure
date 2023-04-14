@@ -17,6 +17,7 @@ class QueryProcessor extends PureComponent {
         this.fetched_data = {
             text_rules: [],
             rules: [],
+            feature_range: {}
         };
         this.unmounted = false;
     }

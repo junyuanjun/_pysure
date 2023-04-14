@@ -16,7 +16,7 @@ import {set_selected_rule} from "../../reducer/action";
 
 const HierarchicalTable = ( props ) => {
     const {attrs, filter_threshold, lattice, rules, preIndex,
-        tot_size, target_names, data_value, col_order, col_info,
+        tot_size, target_names, data_value, col_order, col_info, show_err_checked
     } = props;
 
     const legend_height = 20,
@@ -191,7 +191,7 @@ const HierarchicalTable = ( props ) => {
             .attr('width', d => d.width)
             .attr('height', unit_height)
             .attr('fill', (d, i) => {
-                return i % 2===0 ? `url(#false-class-${i/2})` : colorCate[Math.floor(i/2)]
+                return i % 2===0 && show_err_checked ? `url(#false-class-${i/2})` : colorCate[Math.floor(i/2)]
             });
 
 
